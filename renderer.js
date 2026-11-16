@@ -377,11 +377,7 @@ function orthographic(size, near, far) {
   return new Float32Array([1/size,0,0,0,0,1/size,0,0,0,0,-2/(far-near),0,0,0,-(far+near)/(far-near),1]);
 }
 
-const TIMES = [
-  {label:'午後',sun:unit([-0.48,.69,-.46]),light:[.99,.91,.70],sky:[.79,.91,.99],mist:[.38,.47,.43]},
-  {label:'夕暮れ',sun:unit([-0.48,.25,-.59]),light:[1.27,.64,.32],sky:[.66,.73,.88],mist:[.50,.37,.32]},
-  {label:'朝',sun:unit([.75,.46,-.36]),light:[1.04,.91,.77],sky:[.78,.90,1.05],mist:[.46,.56,.53]},
-];
+const LIGHTING = Object.freeze({sun:unit([-0.48,.69,-.46]),light:[.99,.91,.70],sky:[.79,.91,.99],mist:[.38,.47,.43]});
 
 async function loadTextures(gl){
   const sheets=await loadMaterialSheets();
@@ -464,7 +460,7 @@ export async function createRenderer(canvas) {
     const meshes=Object.fromEntries(Object.entries(data).map(([key,vertices])=>[key,upload(gl,vertices,key!=='water'&&key!=='glass')]));
     return {meshes,collision};
   }
-  const {meshes,collision}=prepare(),avatar=createAvatar(),time=TIMES[0];
+  const {meshes,collision}=prepare(),avatar=createAvatar(),time=LIGHTING;
   const first={x:5,y:0,z:25.5,bodyYaw:0,speed:0,phase:0,grounded:true,swimming:false,vy:0};
   meshes.avatar=upload(gl,avatar.pose(first),false,true);
   const far=shadowTarget(gl,mobile?1192:1792,1),actorShadow=shadowTarget(gl,384,4);

@@ -6,11 +6,7 @@ import {buildShadow} from './software-shadow.js';
 import {defaults,renderDimensions} from './graphics.js';
 import {CANOPY_FIRST,RUNNING_WATER,TILE_SIZE,canopyVisible,loadMaterialSheets,readMaterialTiles} from './materials.js';
 
-const TIMES = [
-  {label:'午後',sun:[-.51,.73,-.45],tint:[1.10,1.10,1.00],mist:[148,169,154],horizon:[199,218,203],peak:[92,158,194]},
-  {label:'夕暮れ',sun:[-.58,.31,-.69],tint:[1.25,.96,.77],mist:[166,146,140],horizon:[240,190,148],peak:[98,120,174]},
-  {label:'朝',sun:[.75,.50,-.40],tint:[1.13,1.11,1.02],mist:[169,188,179],horizon:[213,227,209],peak:[109,174,213]},
-];
+const LIGHTING = Object.freeze({sun:[-.51,.73,-.45],tint:[1.10,1.10,1.00],mist:[148,169,154],horizon:[199,218,203],peak:[92,158,194]});
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const stride=36;
@@ -39,7 +35,7 @@ export async function createSoftwareRenderer(canvas) {
   const world=buildWorld({economy:true}),collision=createCollision(world),avatar=createAvatar();
   const surfaces=['terrain','solid','leaf','grass','glass'].map(key=>chunks(world[key]));
   const casters=[world.terrain,world.solid,world.leaf];
-  const time=TIMES[0],mobile=matchMedia('(pointer:coarse)').matches;
+  const time=LIGHTING,mobile=matchMedia('(pointer:coarse)').matches;
   const standard=buildShadow(casters,time.sun,444,145);
   let detail=null,shade=standard,playerShadow=null;
   let quality={...defaults},reflectionAt=null,glassPass=false;

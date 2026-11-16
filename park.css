@@ -1,3 +1,4 @@
+@font-face{font-family:"Aobane Title";src:url("assets/fonts/title.woff2") format("woff2");font-weight:700;font-display:block}
 :root{color-scheme:dark;background:#000;color:#fffdf4;font-family:"Rethink Sans","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;width:100%;overflow:hidden;overscroll-behavior:none;background:#000}
@@ -8,9 +9,9 @@ canvas,#title-screen{position:fixed;inset:0;width:100%;height:100%;display:block
 #scene:active{cursor:grabbing}
 #hdr-scene{pointer-events:none}
 #title-screen{background:radial-gradient(ellipse at center,#0c170e55 0%,#07160f1a 45%,#06130d50 100%);z-index:1}
-#start{width:100%;height:100%;display:grid;place-content:center;justify-items:center;gap:clamp(12px,2.4vh,25px);background:none;color:#fffdf4;border:0;padding:18px;cursor:pointer;touch-action:manipulation}
+#start{width:100%;height:100%;display:grid;place-content:center;justify-items:center;gap:clamp(12px,2.4vh,25px);background:none;color:#fffdf4;border:0;padding:18px;cursor:pointer;touch-action:manipulation;text-align:center;font-family:"Aobane Title","Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","Noto Serif CJK JP",serif}
 #start:disabled{cursor:progress}
-#start .title{font-family:"Archivo Narrow","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;font-weight:760;font-size:clamp(52px,10vh,110px);line-height:1.1;letter-spacing:.19em;margin-inline-start:.19em;text-shadow:0 3px 24px #08170e9e}
+#start .title{font-weight:700;font-size:clamp(52px,10vh,110px);line-height:1.1;letter-spacing:.19em;margin-inline-start:.19em;text-shadow:0 3px 24px #08170e9e}
 #start-state{font-size:clamp(11px,2.5vh,16px);letter-spacing:.2em;text-shadow:0 2px 12px #08170eb3}
 #start:focus-visible .title{outline:2px solid #eff7ce;outline-offset:13px}
 #graphics{position:fixed;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 20px);overflow:auto;padding:16px;border:1px solid rgba(229,243,207,.22);border-radius:11px;background:#1a2b21f5;box-shadow:0 24px 60px #08100ccc}
