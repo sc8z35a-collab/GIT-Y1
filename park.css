@@ -14,6 +14,7 @@ canvas,#title-screen{position:fixed;inset:0;width:100%;height:100%;display:block
 #start .title{font-weight:700;font-size:clamp(52px,10vh,110px);line-height:1.1;letter-spacing:.19em;margin-inline-start:.19em;text-shadow:0 3px 24px #08170e9e}
 #start-state{font-size:clamp(11px,2.5vh,16px);letter-spacing:.2em;text-shadow:0 2px 12px #08170eb3}
 #start:focus-visible .title{outline:2px solid #eff7ce;outline-offset:13px}
+#exploration-place{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:max(18px,env(safe-area-inset-left));margin:0;padding:7px 12px;border-radius:4px;background:#121711bc;color:#fffdf4;font-size:13px;letter-spacing:.08em;pointer-events:none}
 #graphics{position:fixed;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);width:min(330px,calc(100vw - 32px));max-height:calc(100dvh - 20px);overflow:auto;padding:16px;border:1px solid rgba(229,243,207,.22);border-radius:11px;background:#1a2b21f5;box-shadow:0 24px 60px #08100ccc}
 #graphics header{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;margin-bottom:10px}
 #graphics h1{font-size:16px;margin:0;line-height:1.2;letter-spacing:.08em}

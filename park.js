@@ -2,9 +2,11 @@ import {createRenderer} from './renderer.js';
 import {createPlayer} from './player.js';
 import {createController} from './controller.js';
 import {createFramePacer,defaults,normalizeGraphics} from './graphics.js';
+import {explorationName} from './exploration.js';
 
 const byId=id=>document.getElementById(id);
 const scene=byId('scene'),title=byId('title-screen'),start=byId('start'),settings=byId('graphics'),form=byId('options');
+const place=byId('exploration-place');
 const portrait=matchMedia('(orientation:portrait)'),hdrScreen=matchMedia('(dynamic-range:high)');
 const pacing=createFramePacer(),key='aobane-park.graphics.v2';
 let quality={...defaults},renderer,player,started=false;
@@ -90,6 +92,7 @@ portrait.addEventListener('change',()=>{
 function fail(error){
   console.error(error);
   started=false;title.hidden=false;settings.hidden=true;start.disabled=true;
+  place.hidden=true;
   byId('start-state').textContent='3D風景を読み込めませんでした。ページを再読み込みしてください。';
   hdrOutput?.hide();
 }
@@ -110,6 +113,9 @@ function render(now){
   try{
     const state=player.view(now/1000);
     state.showPlayer=started;
+    const name=started&&settings.hidden?explorationName(state.actor.x,state.actor.y,state.actor.z):'';
+    if(name&&place.textContent!==name)place.textContent=name;
+    place.hidden=!name;
     if(renderer.frame(state)){
       frameCount++;
       if(hasHdr){try{if(!hdrOutput.present(scene))loseHdr();}catch{loseHdr();}}

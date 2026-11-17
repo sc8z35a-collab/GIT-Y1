@@ -2,6 +2,7 @@ import {CANOPY_FIRST, material} from './materials.js';
 import {cliff, cliffWall, LAKE_LEVEL, parkBoundary} from './land.js';
 import {buildExpansion, clearing, extraPaths, grading} from './expansion.js';
 import {plantTree, trunkProfiles} from './trees.js';
+import {buildExploration, explorationCuts, explorationPaths, nearExplorationEarthworks} from './exploration.js';
 
 const TAU = Math.PI * 2;
 export const WET_LEVEL = LAKE_LEVEL;
@@ -48,7 +49,7 @@ export const paths = [
   {w:1.22, points:catmull([[-24,0],[-20,1],[-14,1],[-9,1]])},
   {w:1.22, points:catmull([[29,4],[24,1],[20,1],[17,1]])},
   {w:1.15, points:catmull([[3,19],[-3,24],[-11,30],[-22,27],[-29,17],[-30,13]])},
-  ...extraPaths.map(({w,points})=>({w,points:catmull(points)})),
+  ...[...extraPaths,...explorationPaths].map(({w,points})=>({w,points:catmull(points)})),
 ];
 
 const pathGrid = new Map();
@@ -202,22 +203,24 @@ const m = {
 
 function buildGround() {
   const mesh=new Mesh();
-  const step=compact?1.59:1.00, n=Math.ceil(cliff.x*2/step), rows=Math.ceil(cliff.z*2/step);
-  const grid=[];
-  for(let j=0;j<=rows;j++) {
-    for(let i=0;i<=n;i++) {
-      const x=(i/n*2-1)*cliff.x,z=(j/rows*2-1)*cliff.z;
-      const h=height(x,z), pd=pathDistance(x,z);
-      const normal=unit([height(x-.2,z)-height(x+.2,z),.4,height(x,z-.2)-height(x,z+.2)]);
-      grid.push({p:[x,h,z],n:normal,uv:[pd,shore(x,z)]});
-    }
+  const step=compact?1.59:1.00;
+  function divisions(limit,edges){
+    const count=Math.ceil(limit*2/step);
+    const grid=Array.from({length:count+1},(_,i)=>(i/count*2-1)*limit);
+    return [...new Set([...grid,...edges].map(n=>Math.round(n*1e8)/1e8))].sort((a,b)=>a-b);
   }
-  for(let j=0;j<rows;j++) for(let i=0;i<n;i++) {
-    const a=j*(n+1)+i, b=a+n+1;
-    for(const ii of [a,b,b+1,a,b+1,a+1]) {
-      const v=grid[ii];
-      mesh.vert(v.p,v.n,v.uv,-10,white);
-    }
+  const xs=divisions(cliff.x,explorationCuts.flatMap(({x0,x1})=>[x0,x1]));
+  const zs=divisions(cliff.z,explorationCuts.flatMap(({z0,z1})=>[z0,z1]));
+  const grid=zs.map(z=>xs.map(x=>{
+    const h=height(x,z),pd=pathDistance(x,z);
+    const normal=unit([height(x-.2,z)-height(x+.2,z),.4,height(x,z-.2)-height(x,z+.2)]);
+    return {p:[x,h,z],n:normal,uv:[pd,shore(x,z)]};
+  }));
+  for(let j=0;j<zs.length-1;j++)for(let i=0;i<xs.length-1;i++){
+    const x=(xs[i]+xs[i+1])*.5,z=(zs[j]+zs[j+1])*.5;
+    if(explorationCuts.some(c=>x>c.x0&&x<c.x1&&z>c.z0&&z<c.z1))continue;
+    const a=grid[j][i],b=grid[j+1][i],c=grid[j+1][i+1],d=grid[j][i+1];
+    for(const v of [a,b,c,a,c,d])mesh.vert(v.p,v.n,v.uv,-10,white);
   }
   return mesh;
 }
@@ -392,9 +395,8 @@ function railway(g) {
     for(const s of [-1,1]) g.box(x+s*.65,y+.087,z,.058,.043,1.22,m.galvanized,[.52,.48,.39]);
     if(i%2===0) g.box(x+2.41,y+.14,z,.14,.52,.14,m.guard,[.53,.58,.53]);
   }
-  const z=-29.4,x=-51.9, y=height(x,z)-.3;
-  arch(g,x,y,z,1.68,1.46,.48,.83,true);
-  g.box(x,y+1.92,z-.44,3.42,3.8,.21,m.lining,[.32,.34,.29]);
+  const z=-28.9,x=-52,y=height(x,z)-.31;
+  arch(g,x,y,z,1.76,1.46,.43,.61,true);
 }
 
 function plant(g,x,z,kind) {
@@ -477,13 +479,13 @@ export function buildWorld({economy=false}={}) {
     plantTree({solid,leaf,ground:height,x,z,growth,profileIndex:profile,seed,far,economy,leafMaterial});
     trees.push([x,z]);
   }
-  for(const [x,z,growth,profile] of majorTrees)if(shore(x,z)>1.07)addTree(x,z,growth,profile,false);
+  for(const [x,z,growth,profile] of majorTrees)if(shore(x,z)>1.07&&!nearExplorationEarthworks(x,z,1.3,true))addTree(x,z,growth,profile,false);
   let profile=0;
   for(let i=0;i<490;i++) {
     const x=rnd(-62.5,62.5),z=rnd(-55.2,55.2),far=Math.abs(x)>43||z<-40||z>41;
     const forest=x<-27||z<-32||x>44||z>34;
     if(!forest && rand()<.85)continue;
-    if(clearing(x,z)||shore(x,z)<1.15||pathDistance(x,z)<.83||
+    if(clearing(x,z)||nearExplorationEarthworks(x,z,1.2,true)||shore(x,z)<1.15||pathDistance(x,z)<.83||
        Math.hypot(x-5,z-25)<9.5||Math.hypot(x-28,z-21)<11||Math.hypot(x-40,z+3)<8||Math.hypot(x+35,z+25)<8.3)continue;
     if(trees.some(([tx,tz])=>(tx-x)**2+(tz-z)**2<11.6)||rand()<(far?.28:.18))continue;
     addTree(x,z,rnd(4.25,13.15),profile++%trunkProfiles.length,far);
@@ -493,20 +495,20 @@ export function buildWorld({economy=false}={}) {
   for(const [x,z] of patches) {
     for(let i=0;i<12;i++) {
       const xx=x+rnd(-3.2,3.2),zz=z+rnd(-3.1,3.1);
-      if(clearing(xx,zz)||pathDistance(xx,zz)<.04||shore(xx,zz)<1.015) continue;
+      if(clearing(xx,zz)||nearExplorationEarthworks(xx,zz)||pathDistance(xx,zz)<.04||shore(xx,zz)<1.015) continue;
       plant(leaf,xx,zz,pick(['fern','fern','sedge']));
     }
   }
   for(let i=0;i<550;i++) {
     const t=rnd(0,TAU), r=Math.sqrt(rand()), [dx,dz]=polar(r,t);
     const x=32+dx*13,z=19+dz*10;
-    if(clearing(x,z)||pathDistance(x,z)<.07||shore(x,z)<1.03) continue;
+    if(clearing(x,z)||nearExplorationEarthworks(x,z)||pathDistance(x,z)<.07||shore(x,z)<1.03) continue;
     flowers(grass,x,z,Math.sin(x*.6+z*.17)+Math.cos(z*.76)>.39?0:Math.cos(x*.81-z*.16)>.21?1:2);
   }
   for(let i=0;i<(compact?4100:10800);i++) {
     const x=rnd(-58,56),z=rnd(-53,46);
     const sd=shore(x,z), pd=pathDistance(x,z);
-    if(clearing(x,z)||sd<1.02||pd<.10||((sd>1.23&&pd>1.4)&&rand()<.6)) continue;
+    if(clearing(x,z)||nearExplorationEarthworks(x,z)||sd<1.02||pd<.10||((sd>1.23&&pd>1.4)&&rand()<.6)) continue;
     const y=height(x,z)-.018, tint=rnd(.55,1.03), a=rnd(0,TAU), h=rnd(.074,.239),w=rnd(.010,.032);
     for(let j=0;j<3;j++) {
       const b=a+j*2.11, px=x+Math.cos(b)*rnd(.022,.090),pz=z+Math.sin(b)*rnd(.022,.090),v=rnd(.71,1.19);
@@ -515,12 +517,13 @@ export function buildWorld({economy=false}={}) {
   }
   for(let i=0;i<122;i++) {
     const x=rnd(-49,48),z=rnd(-39,39);
-    if(clearing(x,z)||shore(x,z)<1.1||pathDistance(x,z)<.35) continue;
+    if(clearing(x,z)||nearExplorationEarthworks(x,z,.8)||shore(x,z)<1.1||pathDistance(x,z)<.35) continue;
     const r=rnd(.10,.52),s=rnd(.62,.96),y=height(x,z);
     solid.orb(x,y-.005,z,r,r*.49,r*.67,pick([m.mossRock,m.moss,m.basalt,m.gravel,m.gneiss]),[s,s,s*.84],3,5,.19);
   }
   rand=rng(522708);
   buildExpansion({solid,leaf,glass,height,rnd,bench});
+  buildExploration(solid,height);
   const terrain=buildGround();
   cliffWall(solid,height);
   const water=new Mesh();

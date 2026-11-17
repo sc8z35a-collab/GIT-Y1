@@ -20,15 +20,36 @@ python3 -m http.server 8000
 | `renderer.js`, `software.js`, `software-shadow.js`, `hdr.js`, `graphics.js` | WebGL2 描画 / ソフトウェア描画フォールバック / WebGPU HDR 出力 / 画質設定 |
 | `world.js`, `land.js`, `expansion.js`, `trees.js`, `mesh-layout.js`, `collision.js` | 地形・植生・配置・当たり判定 |
 | `player.js`, `controller.js`, `avatar.js` | プレイヤー操作・アバター |
+| `exploration.js` | 散策先6か所の地形・入口・設備 |
 | `materials.js` | 素材ID定義とテクスチャアトラス読み込み |
-| `assets/tiles-00〜16.webp` | サイトが実際に読み込むアトラス（255×255px、1枚に85px素材×9） |
+| `assets/tiles-large.webp`, `assets/tiles-small.webp` | ゲームが読み込む28px・14pxタイルのアトラス |
+| `assets/tiles-00〜16.webp` | 既存素材の85px版アトラス |
 | `assets/fonts/title.woff2` | タイトル画面用の明朝体（しっぽり明朝 B1、使用文字のみのサブセット、ライセンスは同フォルダの `OFL.txt`） |
 | `textures/` | 高解像度テクスチャ214種（下記） |
 
 公開サイトの `index.html` 末尾に Cloudflare が配信時に挿入するボット判定スクリプトがありましたが、
 ゲーム本体ではなく他の環境では 404 になるため除去しています。それ以外のファイルは取得したままです。
 
-## テクスチャ (`textures/`)
+## 散策先
+
+地下へは斜面を歩いて入れます。入口付近と内部では画面左下に地名を表示します。
+
+| ロケーション | 入口の目印 | 入口の座標 (X, Z) |
+| --- | --- | --- |
+| 石灰岩の鍾乳洞 | 湖の西の林道から西へ入る斜面 | (-46, 5) |
+| 鉱山鉄道の廃坑 | 公園西側の線路を北へ進んだ石のアーチ | (-52, -29) |
+| 谷の廃採石場 | 公園北東の崖沿い遊歩道から東へ下る斜面 | (53.5, -37) |
+| 旧山腹避難壕 | 湖の北の周回路から、五重塔の東で北へ分岐 | (17, -35.7) |
+| 旧地下貯水槽 | 正門外の道から東へ曲がった石積みの入口 | (9, 41.5) |
+| 森の神社跡 | 湖の南西の林道から南へ入った朱色の鳥居 | (-16, 33) |
+
+## 描画用テクスチャ
+
+既存151種類と散策先用126種類をゲームで使います。散策先用は添付アトラス11枚の99種類と、新規生成アトラス3枚の27種類です。新規生成分は洞窟の岩・方解石・川底、廃坑の鉱脈・木材・金属板、遺構のコンクリート・レンガ・設備などに使っています。
+
+通常素材は28px、小物や葉などの細部素材は14pxです。従来の85pxを基準に辺の解像度をそれぞれ約1/3と約1/6に縮小しています。読み込むWebPは合計約60KBで、描画用タイルの画素数は従来の約14.8%です。
+
+## 高解像度アーカイブ (`textures/`)
 
 アトラス 08〜16 に対応する高解像度版（1枚 1254×1254px、素材1つあたり 418×418px）。
 新規素材54種（ID 72〜125）と、葉・コケ・蔦・植物・雑草・作物25種（ID 126〜150）の計79種。
@@ -66,4 +87,4 @@ ID 153 以降は予定番号で、`materials.js` にはまだ登録されてお�
 | 30 | checkerPlate, wiredGlass, glassBlock, stainedGlass, wroughtIron, brushedStainless, corten, treeGrate, paintedCorrugated |
 | 31 | chainLink, tactilePaving, artificialTurf, runningTrack, sandboxSand, epdmChips, playgroundPaint, paintedWood, plasticSlide |
 
-サイトは現在 `assets/` の 85px 版を使っており、`textures/` の高解像度版はまだ描画に組み込まれていません。
+`textures/` は元画像のアーカイブです。ゲームは `assets/` の軽量アトラスを読み込みます。
