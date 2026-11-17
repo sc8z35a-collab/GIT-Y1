@@ -23,7 +23,7 @@ python3 -m http.server 8000
 | `materials.js` | 素材ID定義とテクスチャアトラス読み込み |
 | `assets/tiles-00〜16.webp` | サイトが実際に読み込むアトラス（255×255px、1枚に85px素材×9） |
 | `assets/fonts/title.woff2` | タイトル画面用の明朝体（しっぽり明朝 B1、使用文字のみのサブセット、ライセンスは同フォルダの `OFL.txt`） |
-| `textures/` | 高解像度テクスチャ169種（下記） |
+| `textures/` | 高解像度テクスチャ214種（下記） |
 
 公開サイトの `index.html` 末尾に Cloudflare が配信時に挿入するボット判定スクリプトがありましたが、
 ゲーム本体ではなく他の環境では 404 になるため除去しています。それ以外のファイルは取得したままです。
@@ -32,11 +32,11 @@ python3 -m http.server 8000
 
 アトラス 08〜16 に対応する高解像度版（1枚 1254×1254px、素材1つあたり 418×418px）。
 新規素材54種（ID 72〜125）と、葉・コケ・蔦・植物・雑草・作物25種（ID 126〜150）の計79種。
-さらに追加135種の計画（シート17〜31、ID 153〜287）のうち、シート21〜31の90種（ID 189〜287）を保存済み（残りはシート17〜20）。
+さらに追加135種の計画（シート17〜31、ID 153〜287）の全135種（ID 153〜287）を保存済み。
 ID 153 以降は予定番号で、`materials.js` にはまだ登録されておらず、ゲームでは使われていません。
 
-- `textures/sheets/tiles-NN.png` … 3×3 のシート原本（19枚。16番は7素材＋空き2枠）
-- `textures/tiles/NNN-name.png` … 個別に切り出した 169 素材。`NNN` は `materials.js` の素材ID
+- `textures/sheets/tiles-NN.png` … 3×3 のシート原本（24枚。16番は7素材＋空き2枠）
+- `textures/tiles/NNN-name.png` … 個別に切り出した 214 素材。`NNN` は `materials.js` の素材ID
 - `textures/index.tsv` … 素材ID・名前・シート番号・シート内位置の一覧
 
 | シート | 素材 |
@@ -50,11 +50,16 @@ ID 153 以降は予定番号で、`materials.js` にはまだ登録されてお�
 | 14 | greenMaple, oakLeaf, aspen, willow, camellia, velvetMoss, starMoss, basaltMoss, barkMoss |
 | 15 | ivy, creeper, wisteria, creepingFig, fern, wildStrawberry, beachGrass, plantain, mugwort |
 | 16 | coastalClover, mustard, switchgrass, chard, kale, cabbage, rice |
+| 17 | birchBark, sakuraBark, redPineBark, sugiBark, planeBark, crapeMyrtle, zelkovaBark, corkBark, paperbark |
+| 18 | ginkgo, sakura, sakuraLeaf, blackPine, sugi, hinoki, birch, zelkova, kusunoki |
+| 19 | bracketFungus, rottenWood, burlGrain, resinDrip, beetleGalleries, lightningScar, lichenBark, woodpeckerHoles, barkStripped |
+| 20 | ginkgoCarpet, mapleCarpet, sakuraPetals, needleLitter, acornLitter, frost, thinSnow, puddle, wetLeaves |
 | 21 | sunflower, tulip, cosmos, spiderLily, morningGlory, rose, nemophila, chrysanthemum, pansy |
 | 22 | lotusLeaf, waterLily, duckweed, cattail, waterHyacinth, horsetail, waterParsley, pondAlgae, sphagnum |
 | 23 | beachSand, blackSand, shellSand, barnacles, tidePool, driftwood, seaGlass, rippledSand, kelpWrack |
 | 24 | oyaStone, andesite, sandstoneStrata, chalk, shale, quartzVein, obsidian, lichenRock, conglomerate |
 | 25 | crackedClay, redClay, kuroboku, plowedFurrows, paddy, mushrooms, footprintMud, gravelWeeds, twigLitter |
+| 26 | masado, herringbone, terrazzo, mossySteps, turfGrid, slateFlagstone, concretePavers, woodBlockPavers, crackedAsphalt |
 | 27 | kawara, thatch, shoji, namakoWall, earthenWall, vermilion, hiwadabuki, takegaki, yoshizu |
 | 28 | gabion, rammedEarth, cinderBlock, siding, pebbleDash, roughStucco, glazedBrick, adobe, spanishTile |
 | 29 | firewoodStack, logWall, barnwood, peelingPaint, plywood, osb, rattan, mossyPlank, cork |
