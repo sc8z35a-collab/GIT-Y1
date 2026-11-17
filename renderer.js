@@ -2,7 +2,7 @@ import {createAvatar} from './avatar.js';
 import {createCollision} from './collision.js';
 import {defaults,renderDimensions} from './graphics.js';
 import {SEA_LEVEL} from './land.js';
-import {CANOPY_FIRST,MATERIAL_COUNT,RUNNING_WATER,TILE_SIZE,loadMaterialSheets,readMaterialTiles} from './materials.js';
+import {BASE_MATERIAL_COUNT,CANOPY_FIRST,EXPLORATION_FIRST,MATERIAL_COUNT,RUNNING_WATER,loadMaterialSheets,readMaterialTiles} from './materials.js';
 import {spatialMesh,viewPlanes,visible} from './mesh-layout.js';
 import {buildWorld, pond, WET_LEVEL} from './world.js';
 
@@ -35,6 +35,8 @@ void main(){
 
 const CORE = `
 uniform highp sampler2DArray uTextures;
+uniform highp sampler2DArray uSmallTextures;
+uniform highp ivec4 uTileLayers[${Math.ceil(MATERIAL_COUNT/4)}];
 uniform vec3 uEye;
 uniform vec3 uSun;
 uniform vec3 uSunColor;
@@ -74,7 +76,12 @@ vec3 displayColor(vec3 c){
   return pow(c/(.87+.20*c),vec3(1./2.2));
 }
 vec3 tex(float material,vec2 uv) {
-  return texture(uTextures,vec3(uv.x,-uv.y,material)).rgb;
+  int id=int(material);
+  int index=id>=${EXPLORATION_FIRST}?id-${EXPLORATION_FIRST-BASE_MATERIAL_COUNT}:id;
+  int layer=uTileLayers[index/4][index%4];
+  vec2 st=vec2(uv.x,-uv.y);
+  if(layer<0)return texture(uSmallTextures,vec3(st,float(-layer-1))).rgb;
+  return texture(uTextures,vec3(st,float(layer))).rgb;
 }
 float pondDistance(vec2 p){
   vec2 d=(p-vec2(4.,-12.))/vec2(22.8,18.5);
@@ -379,20 +386,31 @@ function orthographic(size, near, far) {
 
 const LIGHTING = Object.freeze({sun:unit([-0.48,.69,-.46]),light:[.99,.91,.70],sky:[.79,.91,.99],mist:[.38,.47,.43]});
 
+const SMALL_TEXTURE_UNIT=5;
+
 async function loadTextures(gl){
   const sheets=await loadMaterialSheets();
-  const out=gl.createTexture();
-  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D_ARRAY,out);
-  gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1+Math.floor(Math.log2(TILE_SIZE)),gl.SRGB8_ALPHA8,TILE_SIZE,TILE_SIZE,MATERIAL_COUNT);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.MIRRORED_REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.MIRRORED_REPEAT);
+  const layers=new Int32Array(Math.ceil(MATERIAL_COUNT/4)*4);
   const anisotropic=gl.getExtension('EXT_texture_filter_anisotropic');
-  if(anisotropic)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisotropic.TEXTURE_MAX_ANISOTROPY_EXT,
-    Math.min(6,gl.getParameter(anisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-  readMaterialTiles(sheets,(i,pixels)=>gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,i,TILE_SIZE,TILE_SIZE,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels));
-  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  sheets.forEach((sheet,group)=>{
+    const {size,ids}=sheet;
+    gl.activeTexture(gl.TEXTURE0+(group===0?0:SMALL_TEXTURE_UNIT));
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY,gl.createTexture());
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1+Math.floor(Math.log2(size)),gl.SRGB8_ALPHA8,size,size,ids.length);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.MIRRORED_REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.MIRRORED_REPEAT);
+    if(anisotropic)gl.texParameterf(gl.TEXTURE_2D_ARRAY,anisotropic.TEXTURE_MAX_ANISOTROPY_EXT,
+      Math.min(6,gl.getParameter(anisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    readMaterialTiles(sheet,(id,pixels,layer)=>{
+      const index=id>=EXPLORATION_FIRST?id-EXPLORATION_FIRST+BASE_MATERIAL_COUNT:id;
+      layers[index]=group===0?layer:-layer-1;
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,layer,size,size,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    });
+    gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  });
+  return layers;
 }
 
 function upload(gl,data,split=false,dynamic=false){
@@ -452,7 +470,13 @@ export async function createRenderer(canvas) {
   const sky=makeProgram(gl,SCREEN_VERTEX,SKY_FRAGMENT);
   const water=makeProgram(gl,VERTEX,WATER_FRAGMENT);
   const shadow=makeProgram(gl,SHADOW_VERTEX,SHADOW_FRAGMENT);
-  await loadTextures(gl);
+  const tileLayers=await loadTextures(gl);
+  for(const {program,uniforms} of [world,water]){
+    gl.useProgram(program);
+    gl.uniform1i(uniforms.uTextures,0);
+    gl.uniform1i(uniforms.uSmallTextures??null,SMALL_TEXTURE_UNIT);
+    gl.uniform4iv(uniforms['uTileLayers[0]'],tileLayers);
+  }
 
   function prepare(){
     const data=buildWorld({economy:mobile});
@@ -504,7 +528,7 @@ export async function createRenderer(canvas) {
   function environment(u,eye,clock,output){
     gl.uniform3fv(u.uEye??null,eye);gl.uniform3fv(u.uSun,time.sun);
     gl.uniform3fv(u.uSunColor,time.light);gl.uniform3fv(u.uSkyTint,time.sky);
-    gl.uniform3fv(u.uMist,time.mist);gl.uniform1f(u.uClock,clock);gl.uniform1i(u.uTextures??null,0);
+    gl.uniform3fv(u.uMist,time.mist);gl.uniform1f(u.uClock,clock);
     gl.uniform1i(u.uOutputMode,output);
   }
   function lightWorld(eye,matrix,clock,mirror){

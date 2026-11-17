@@ -1,8 +1,12 @@
-export const TILE_SIZE = 85;
-export const SHEET_COUNT = 17;
-export const MATERIAL_COUNT = 151;
-export const CANOPY_FIRST = 200;
-export const RUNNING_WATER = 160;
+export const TILE_SIZE = 28;
+export const SMALL_TILE_SIZE = 14;
+export const BASE_MATERIAL_COUNT = 151;
+// 151–287 are reserved for the existing source archive.
+export const EXPLORATION_FIRST = 288;
+export const EXPLORATION_SHEETS = 14;
+export const MATERIAL_COUNT = BASE_MATERIAL_COUNT + EXPLORATION_SHEETS * 9;
+export const CANOPY_FIRST = 512;
+export const RUNNING_WATER = 511;
 
 export const material = Object.freeze({
   teak:72, burntWood:73, endGrain:74, castIron:75, rope:76, grating:77, cobbles:78, pondPebbles:79, rivets:80,
@@ -16,24 +20,46 @@ export const material = Object.freeze({
   mugwort:143, coastalClover:144, mustard:145, switchgrass:146, chard:147, kale:148, cabbage:149, rice:150,
 });
 
+// The two atlases have 12 columns. IDs here identify detail-sized surfaces
+// such as foliage, fittings and small props.
+const small = new Set([
+  7,31,32,33,40,47,53,61,62,65,66,68,74,76,77,80,88,103,104,108,109,
+  110,111,112,113,114,115,116,119,120,121,123,126,127,128,129,130,131,
+  132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,
+  315,316,317,319,320,321,322,323,334,336,337,338,339,340,341,
+  351,352,353,354,355,356,357,358,359,369,370,371,374,375,376,382,383,
+  400,401,403,408,409,411,
+]);
+const materialIds = Array.from({length:MATERIAL_COUNT},(_,i)=>
+  i<BASE_MATERIAL_COUNT?i:EXPLORATION_FIRST+i-BASE_MATERIAL_COUNT);
+export const ATLAS_COLS = 12;
+export const textureGroups = [
+  {file:'tiles-large.webp',size:TILE_SIZE,ids:materialIds.filter(id=>!small.has(id))},
+  {file:'tiles-small.webp',size:SMALL_TILE_SIZE,ids:materialIds.filter(id=>small.has(id))},
+];
+
 export async function loadMaterialSheets(){
-  return Promise.all(Array.from({length:SHEET_COUNT},async (_,i)=>{
+  return Promise.all(textureGroups.map(async group=>{
+    const {file,size,ids}=group;
     const image=new Image();
-    image.src=new URL(`assets/tiles-${String(i).padStart(2,'0')}.webp`,import.meta.url);
+    image.src=new URL(`assets/${file}`,import.meta.url);
     await image.decode();
-    if(image.naturalWidth!==TILE_SIZE*3||image.naturalHeight!==TILE_SIZE*3)
-      throw new Error('Invalid texture atlas');
-    return image;
+    if(image.naturalWidth!==size*ATLAS_COLS||
+       image.naturalHeight!==size*Math.ceil(ids.length/ATLAS_COLS)){
+      throw new Error(`Invalid texture atlas: ${file}`);
+    }
+    return {image,...group};
   }));
 }
-export function readMaterialTiles(sheets,each){
+
+export function readMaterialTiles({image,size,ids},each){
   const staging=document.createElement('canvas');
-  staging.width=staging.height=TILE_SIZE*3;
+  staging.width=image.naturalWidth;staging.height=image.naturalHeight;
   const ctx=staging.getContext('2d',{willReadFrequently:true});
-  sheets.forEach((image,sheet)=>{
-    ctx.drawImage(image,0,0);
-    for(let n=0;n<9&&sheet*9+n<MATERIAL_COUNT;n++)
-      each(sheet*9+n,ctx.getImageData(n%3*TILE_SIZE,Math.floor(n/3)*TILE_SIZE,TILE_SIZE,TILE_SIZE).data);
+  ctx.drawImage(image,0,0);
+  ids.forEach((id,layer)=>{
+    const x=layer%ATLAS_COLS*size,y=Math.floor(layer/ATLAS_COLS)*size;
+    each(id,ctx.getImageData(x,y,size,size).data,layer);
   });
 }
 

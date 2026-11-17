@@ -4,7 +4,7 @@ import {createCollision} from './collision.js';
 import {SEA_LEVEL} from './land.js';
 import {buildShadow} from './software-shadow.js';
 import {defaults,renderDimensions} from './graphics.js';
-import {CANOPY_FIRST,RUNNING_WATER,TILE_SIZE,canopyVisible,loadMaterialSheets,readMaterialTiles} from './materials.js';
+import {CANOPY_FIRST,RUNNING_WATER,SMALL_TILE_SIZE,TILE_SIZE,canopyVisible,loadMaterialSheets,readMaterialTiles} from './materials.js';
 
 const LIGHTING = Object.freeze({sun:[-.51,.73,-.45],tint:[1.10,1.10,1.00],mist:[148,169,154],horizon:[199,218,203],peak:[92,158,194]});
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -13,7 +13,9 @@ const stride=36;
 
 async function materials(){
   const list=[];
-  readMaterialTiles(await loadMaterialSheets(),(i,pixels)=>{list[i]=pixels;});
+  for(const sheet of await loadMaterialSheets()){
+    readMaterialTiles(sheet,(id,pixels)=>{list[id]=pixels;});
+  }
   return list;
 }
 function chunks(mesh) {
@@ -75,12 +77,12 @@ export async function createSoftwareRenderer(canvas) {
     out[2]=.095;
     return out;
   }
-  function uvIndex(u,v){
-    const period=TILE_SIZE*2;
-    let a=Math.floor(u*TILE_SIZE)%period,b=Math.floor(-v*TILE_SIZE)%period;
+  function uvIndex(u,v,size=TILE_SIZE){
+    const period=size*2;
+    let a=Math.floor(u*size)%period,b=Math.floor(-v*size)%period;
     if(a<0)a+=period;
     if(b<0)b+=period;
-    return ((b<TILE_SIZE?b:period-1-b)*TILE_SIZE+(a<TILE_SIZE?a:period-1-a))*4;
+    return ((b<size?b:period-1-b)*size+(a<size?a:period-1-a))*4;
   }
   function sky() {
     zBuffer.fill(0);
@@ -138,6 +140,7 @@ export async function createSoftwareRenderer(canvas) {
     const dw0=(by-cy)/denom,dw1=(cy-ay)/denom,dw2=-dw0-dw1;
     const terrain=material===-10,water=material===-20,foliage=material>=CANOPY_FIRST,flow=material===RUNNING_WATER;
     const texture=material>=0?textures[foliage?material-CANOPY_FIRST:flow?23:material]:null;
+    const size=texture?.length===TILE_SIZE*TILE_SIZE*4?TILE_SIZE:SMALL_TILE_SIZE;
     const hdr=quality.hdr&&!mirror;
     const vx=(a[5]+b[5]+c[5])*.333333,vz=(a[6]+b[6]+c[6])*.333333;
     const fogLevel=.000097*(1+Math.sin(vx*.054+clock*.004)*Math.cos(vz*.048)*.58);
@@ -203,7 +206,7 @@ export async function createSoftwareRenderer(canvas) {
           const u=(w0*au+w1*bu+w2*cu)*d,v=(w0*av+w1*bv+w2*cv)*d;
           if(foliage&&!canopyVisible(u,v))continue;
           const k=foliage?1.63:1;
-          const at=uvIndex(u*k+(flow?Math.sin(v*5+clock)*.034:0),v*k-(flow?clock*.44:0));
+          const at=uvIndex(u*k+(flow?Math.sin(v*5+clock)*.034:0),v*k-(flow?clock*.44:0),size);
           r=texture[at];g=texture[at+1];b=texture[at+2];
           if(flow){r=r*.72+45;g=g*.81+52;b=b*.84+63;}
         }
