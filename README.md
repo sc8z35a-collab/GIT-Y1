@@ -23,7 +23,7 @@ python3 -m http.server 8000
 | `materials.js` | 素材ID定義とテクスチャアトラス読み込み |
 | `assets/tiles-00〜16.webp` | サイトが実際に読み込むアトラス（255×255px、1枚に85px素材×9） |
 | `assets/fonts/title.woff2` | タイトル画面用の明朝体（しっぽり明朝 B1、使用文字のみのサブセット、ライセンスは同フォルダの `OFL.txt`） |
-| `textures/` | 高解像度テクスチャ79種（下記） |
+| `textures/` | 高解像度テクスチャ124種（下記） |
 
 公開サイトの `index.html` 末尾に Cloudflare が配信時に挿入するボット判定スクリプトがありましたが、
 ゲーム本体ではなく他の環境では 404 になるため除去しています。それ以外のファイルは取得したままです。
@@ -32,9 +32,11 @@ python3 -m http.server 8000
 
 アトラス 08〜16 に対応する高解像度版（1枚 1254×1254px、素材1つあたり 418×418px）。
 新規素材54種（ID 72〜125）と、葉・コケ・蔦・植物・雑草・作物25種（ID 126〜150）の計79種。
+さらに追加135種の計画（シート17〜31、ID 153〜287）のうち、シート27〜31の45種（ID 243〜287）を保存済み。
+ID 153 以降は予定番号で、`materials.js` にはまだ登録されておらず、ゲームでは使われていません。
 
-- `textures/sheets/tiles-NN.png` … 3×3 のシート原本（9枚。16番は7素材＋空き2枠）
-- `textures/tiles/NNN-name.png` … 個別に切り出した 79 素材。`NNN` は `materials.js` の素材ID
+- `textures/sheets/tiles-NN.png` … 3×3 のシート原本（14枚。16番は7素材＋空き2枠）
+- `textures/tiles/NNN-name.png` … 個別に切り出した 124 素材。`NNN` は `materials.js` の素材ID
 - `textures/index.tsv` … 素材ID・名前・シート番号・シート内位置の一覧
 
 | シート | 素材 |
@@ -48,5 +50,10 @@ python3 -m http.server 8000
 | 14 | greenMaple, oakLeaf, aspen, willow, camellia, velvetMoss, starMoss, basaltMoss, barkMoss |
 | 15 | ivy, creeper, wisteria, creepingFig, fern, wildStrawberry, beachGrass, plantain, mugwort |
 | 16 | coastalClover, mustard, switchgrass, chard, kale, cabbage, rice |
+| 27 | kawara, thatch, shoji, namakoWall, earthenWall, vermilion, hiwadabuki, takegaki, yoshizu |
+| 28 | gabion, rammedEarth, cinderBlock, siding, pebbleDash, roughStucco, glazedBrick, adobe, spanishTile |
+| 29 | firewoodStack, logWall, barnwood, peelingPaint, plywood, osb, rattan, mossyPlank, cork |
+| 30 | checkerPlate, wiredGlass, glassBlock, stainedGlass, wroughtIron, brushedStainless, corten, treeGrate, paintedCorrugated |
+| 31 | chainLink, tactilePaving, artificialTurf, runningTrack, sandboxSand, epdmChips, playgroundPaint, paintedWood, plasticSlide |
 
 サイトは現在 `assets/` の 85px 版を使っており、`textures/` の高解像度版はまだ描画に組み込まれていません。
